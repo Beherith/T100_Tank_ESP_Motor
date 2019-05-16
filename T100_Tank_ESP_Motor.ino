@@ -1,3 +1,26 @@
+//TODO:
+//Add Encoder info
+//Add PID to set positions
+//Add command parser for the following commands:
+//Set motor pwm value
+//	should obey timout
+//set wheel speed (achieve with PID)
+//	should obey timout
+//set wheel position (govern with PID)
+//	should call back when command finished
+//set LED colors, with timeout
+//	 a timeout of 0 means indefinately
+//	a timeout of -1 means return to normal operation
+//	Set R1 B1 G1 W1 colors from [0;255]
+//set the gyro update rate
+//get gyro status
+//get VBat
+//set command timeout
+//set motor PWM frequency
+
+//Possible control states:
+//[PWM control] -> [Speed control] -> [velocity control]
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 //#include <ArduinoOTA.h>
@@ -21,7 +44,11 @@
 #define LENC2
 #define LENC3
 #define LENC4
+// Rotary encoder info:
+//https://github.com/LennartHennigs/ESPRotary
+//https://github.com/PaulStoffregen/Encoder/blob/master/Encoder.h
 
+// fast PID: https://github.com/mike-matera/FastPID
 class TankTrack{
 	public:
 		int encApin = -1;
