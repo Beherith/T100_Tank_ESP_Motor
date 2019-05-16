@@ -9,18 +9,154 @@
 #include <Hash.h>
 
 #include "WEMOS_Motor.h"
+#include <NeoPixelBus.h>
 
-/* Set these to your desired credentials. */
+#define MOTOR_SHIELD_SCL 5 //D1
+#define MOTOR_SHIELD_SDA 4 //D2
 
-#define DEBUGPIN 12
+#define MPU9255_SDA
+#define MPU9255_SCL
+
+#define LENC1
+#define LENC2
+#define LENC3
+#define LENC4
+
+class TankTrack{
+	public:
+		int encApin = -1;
+		int encBpin = -1;
+		volatile int position = 0;
+		bool movingdirection = 0;
+		int acceleration = 0;
+	void TankTrack(int apin, int bpin){
+		encApin = apin;
+		encBpin = bpin;
+		pinMode(encApin,INPUT_PULLUP);
+		pinMode(encBpin,INPUT_PULLUP);
+		
+	}
+	
+	
+}
+
+
+#define NEOPIXELBUS 2 //D4
+NeoPixelBus<NeoGrbwFeature,NeoEsp8266Uart1800KbpsMethod> strip(8);
+
+struct tankstate{
+	uint32_t ax,ay,az;
+	uint32_t gx,gy,gz;
+	uint32_t mx,my,mz;
+	uint32_t ltpos, rtpos;
+	uint32_t ltrate, rtrate;
+	int32_t lpwm,rpwm;
+	uint32_t lastcommand;
+	uint32_t drivepwm;
+} TS;
+
+RgbwColor white(255,255,255,255);
+RgbwColor yellow(255,100,0,50);
+RgbwColor red(255,0,0,0);
+RgbwColor green(0,255,0,0);
+RgbwColor off(0,0,0,0);
+
+void flash(uint32_t t, uint32_t led1, uint32_t led2, RgbwColor c){;
+	if ((t >>7)%2 ==0){
+		strip.SetPixelColor(led1,off);
+		strip.SetPixelColor(led2,off);
+	}else {
+		strip.SetPixelColor(1,c);
+		strip.SetPixelColor(6,c);
+	}
+	}
+
+uint32_t updateLEDS(){
+	uint32_t dt = micros();
+	uint32_t now = millis();
+	strip.SetPixelColor(0, white);
+	strip.SetPixelColor(3, white);
+	strip.SetPixelColor(4, red);
+	strip.SetPixelColor(7, red);
+	
+	strip.SetPixelColor(1,off);
+	strip.SetPixelColor(2,off);
+	strip.SetPixelColor(5,off);
+	strip.SetPixelColor(6,off);
+	const int turnthres = 10;
+	//Movestate Classes:
+	// A. Stopped
+	// B. Going forward
+		// Forward pure
+		// Forward left
+		// Forward Right
+	// C. Going Back
+		// Back Pure
+		// Back left
+		// Back Right
+	// D. Turninplace Left
+	// E . Turninplace Right
+	if (TS.lpwm == 0 && TS.rpwm == 0){ //Stopped 
+
+	}else if(TS.lpwm > 0 && TS.rpwm > 0){ //Going Forward
+		strip.SetPixelColor(1,white);
+		strip.SetPixelColor(2,white);
+		strip.SetPixelColor(5,off);
+		strip.SetPixelColor(6,off);
+		if((TS.lpwm - TS.rpwm) > turnthres){ // Forward left
+			flash(now, 1, 6, yellow);
+		} else if((TS.rpwm - TS.lpwm) > turnthres){ //Forward right
+			flash(now, 2, 5, yellow);
+		} else { //Forward Pure
+			
+		}
+	}else if(TS.lpwm < 0 && TS.rpwm < 0){ //Going Back
+		strip.SetPixelColor(1,off);
+		strip.SetPixelColor(2,off);
+		strip.SetPixelColor(5,white);
+		strip.SetPixelColor(6,white);
+		if((TS.lpwm - TS.rpwm) < turnthres){ // Back Right
+			flash(now, 2, 5, yellow);
+		} else if((TS.rpwm - TS.lpwm) > turnthres){ //Forward right
+			flash(now, 1, 6, yellow);
+		} else { //Back pure
+		}
+	} else if(TS.lpwm < 0 && TS.rpwm > 0) {//turninplace left
+		if((TS.lpwm - TS.rpwm) < turnthres){ // Back Right
+			flash(now, 2, 5, yellow);
+		} else if((TS.rpwm - TS.lpwm) > turnthres){ //Forward right
+			flash(now, 1, 6, yellow);
+		}
+	} else if(TS.lpwm > 0 && TS.rpwm < 0) {//turninplace right
+		if((TS.lpwm - TS.rpwm) < turnthres){ // Back Right
+			flash(now, 2, 5, yellow);
+		} else if((TS.rpwm - TS.lpwm) > turnthres){ //Forward right
+			flash(now, 1, 6, yellow);
+		}
+	}else { //unknown state
+		strip.SetPixelColor(1,green);
+		strip.SetPixelColor(2,green);
+		strip.SetPixelColor(5,green);
+		strip.SetPixelColor(6,green);
+	}
+	strip.Show();
+	return micros()-dt;
+}
+
+void addencoder(){};
+
 /*
 #LEDS
-#8 leds in total, first is fw left
+#8 leds in total, first is fw left outer
+#FRONT
+0 1 2 3
+7 6 5 4
+#BACK
 #NeoEsp8266Uart1800KbpsMethod 
+https://github.com/Makuna/NeoPixelBus/wiki/ESP8266-NeoMethods
+on gpio2
 #using Neopixelbus
 #
-
-
 
 #GYRO, Accel, magnetometer
 
@@ -244,7 +380,7 @@ void startMDNS() { // Start the mDNS responder
 }
 
 void setup() {
-	pinMode(DEBUGPIN,OUTPUT);
+	//pinMode(DEBUGPIN,OUTPUT);
 	setupmotorpins();
 	//digitalWrite(DEBUGPIN, !onState); //set the PPM signal pin to the default state (off)
 /* You can remove the password parameter if you want the AP to be open. */
