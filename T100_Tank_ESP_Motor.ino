@@ -67,10 +67,6 @@ class TankTrack{
 	
 }
 
-
-#define NEOPIXELBUS 2 //D4
-NeoPixelBus<NeoGrbwFeature,NeoEsp8266Uart1800KbpsMethod> strip(8);
-
 struct tankstate{
 	uint32_t ax,ay,az;
 	uint32_t gx,gy,gz;
@@ -81,6 +77,10 @@ struct tankstate{
 	uint32_t lastcommand;
 	uint32_t drivepwm;
 } TS;
+
+#define NEOPIXELBUS 2 //D4
+NeoPixelBus<NeoGrbwFeature,NeoEsp8266Uart1800KbpsMethod> strip(8);
+
 
 RgbwColor white(255,255,255,255);
 RgbwColor yellow(255,100,0,50);
@@ -468,8 +468,20 @@ void setup() {
 }
 
 unsigned long time_now = 0;
-
+unsigned long last_update =0;
+unsigned long update_rate = 20; //ms
 void loop() {
+	if (millis()>last_update + update_rate){
+		last_update += update_rate;
+		//update PID controllers for tracks
+		
+		//
+		
+		//output gyro data
+		
+	}else{
+		
+	}
 
   webSocket.loop();
 //  ArduinoOTA.handle();
